@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>414</width>
+    <width>400</width>
     <height>327</height>
    </rect>
   </property>
@@ -30,7 +30,7 @@
      <x>10</x>
      <y>10</y>
      <width>381</width>
-     <height>301</height>
+     <height>311</height>
     </rect>
    </property>
    <property name="currentIndex">
@@ -67,7 +67,7 @@
       <rect>
        <x>190</x>
        <y>50</y>
-       <width>151</width>
+       <width>181</width>
        <height>25</height>
       </rect>
      </property>
@@ -83,7 +83,7 @@
       <rect>
        <x>190</x>
        <y>90</y>
-       <width>151</width>
+       <width>181</width>
        <height>25</height>
       </rect>
      </property>
@@ -96,7 +96,7 @@
       <rect>
        <x>30</x>
        <y>90</y>
-       <width>141</width>
+       <width>140</width>
        <height>17</height>
       </rect>
      </property>
@@ -113,10 +113,10 @@
     <widget class="QLabel" name="errorLoginLabel">
      <property name="geometry">
       <rect>
-       <x>60</x>
+       <x>10</x>
        <y>130</y>
-       <width>261</width>
-       <height>51</height>
+       <width>361</width>
+       <height>71</height>
       </rect>
      </property>
      <property name="text">
@@ -130,13 +130,16 @@
      <property name="geometry">
       <rect>
        <x>80</x>
-       <y>200</y>
+       <y>210</y>
        <width>211</width>
-       <height>25</height>
+       <height>31</height>
       </rect>
      </property>
      <property name="text">
       <string>Login</string>
+     </property>
+     <property name="shortcut">
+      <string>Return</string>
      </property>
      <property name="default">
       <bool>true</bool>
@@ -150,9 +153,9 @@
     <widget class="QLineEdit" name="loginRegisterField">
      <property name="geometry">
       <rect>
-       <x>180</x>
+       <x>190</x>
        <y>50</y>
-       <width>151</width>
+       <width>181</width>
        <height>25</height>
       </rect>
      </property>
@@ -166,9 +169,9 @@
     <widget class="QLineEdit" name="passwordRegisterField">
      <property name="geometry">
       <rect>
-       <x>180</x>
+       <x>190</x>
        <y>90</y>
-       <width>151</width>
+       <width>181</width>
        <height>25</height>
       </rect>
      </property>
@@ -179,9 +182,9 @@
     <widget class="QLabel" name="passwordLabel_2">
      <property name="geometry">
       <rect>
-       <x>20</x>
+       <x>30</x>
        <y>90</y>
-       <width>141</width>
+       <width>140</width>
        <height>17</height>
       </rect>
      </property>
@@ -198,10 +201,10 @@
     <widget class="QLabel" name="errorRegisterLabel">
      <property name="geometry">
       <rect>
-       <x>50</x>
+       <x>10</x>
        <y>130</y>
-       <width>261</width>
-       <height>51</height>
+       <width>361</width>
+       <height>71</height>
       </rect>
      </property>
      <property name="text">
@@ -214,7 +217,7 @@
     <widget class="QLabel" name="loginLabel_2">
      <property name="geometry">
       <rect>
-       <x>20</x>
+       <x>30</x>
        <y>50</y>
        <width>141</width>
        <height>17</height>
@@ -236,14 +239,17 @@
     <widget class="QPushButton" name="registerButton">
      <property name="geometry">
       <rect>
-       <x>70</x>
-       <y>200</y>
+       <x>80</x>
+       <y>210</y>
        <width>211</width>
-       <height>25</height>
+       <height>31</height>
       </rect>
      </property>
      <property name="text">
       <string>Register</string>
+     </property>
+     <property name="shortcut">
+      <string>Return</string>
      </property>
      <property name="default">
       <bool>true</bool>
