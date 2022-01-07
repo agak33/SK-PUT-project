@@ -1,8 +1,27 @@
 
+DATA_SEPARATOR          = ';'
+LOGIN_PREFIX            = 'L'
+REGISTER_PREFIX         = 'R'
+LOGOUT_PREFIX           = 'LO'
+CALENDAR_INSERT_PREFIX  = 'CI'
+CALENDAR_MODIFY_PREFIX  = 'CM'
+CALENDAR_DELETE_PREFIX  = 'CD'
+EVENT_INSERT_PREFIX     = 'EI'
+EVENT_MODIFY_PREFIX     = 'EM'
+EVENT_DELETE_PREFIX     = 'ED'
+
+MAX_DATA_LENGTH = 1024
+ERROR_VALUE = '1'
+
 APPLICATION_PORT = 1234
 APPLICATION_HOST = 'localhost'
 
 SCREEN_MODELS_FOLDER  = 'screenModels'
+MAIN_APP_WINDOW       = 'mainWindow.ui'
+
 SCREEN_LOGIN_REGISTER = 'loginWindow.ui'
-SCREEN_USER_VIEW      = 'userWindow.ui'
-SCREEN_CALENDAR_VIEW  = 'calendarWindow.ui'
+
+SCREEN_CALENDAR_LIST  = 'calendarList.ui'
+SCREEN_NEW_CALENDAR   = 'addNewCalendar.ui'
+SCREEN_CALENDAR_VIEW  = 'calendar.ui'
+
