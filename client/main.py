@@ -7,5 +7,5 @@ import signal
 
 if __name__ == '__main__':    
     app = App()
-    signal.signal(signal.SIGPIPE, signal.SIG_DFL)
+    #signal.signal(signal.SIGPIPE, signal.SIG_DFL)
     sys.exit(app.app.exec_())

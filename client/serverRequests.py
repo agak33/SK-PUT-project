@@ -9,23 +9,31 @@ class ServerRequests():
         super().__init__()
         self.socket:           socket   = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.connectionStatus: bool     = False
-        self.errorMessage:     str      = self.connect()
+        self.connect()
 
     def connect(self) -> Union[None, str]:
         try:
+            print(f'Trying connect to {APPLICATION_HOST} at the port {APPLICATION_PORT}')
             self.socket.connect((APPLICATION_HOST, APPLICATION_PORT))
             self.connectionStatus = True
+            print('Connected to serwer')
         except ConnectionRefusedError:
             self.connectionStatus = False
-            return 'Cannot connect to the server'
-        return None
+            print('Unable to connect to server')
 
     def sendLoginData(self, login: str, passwd: str) -> Union[None, str]:
         if not self.connectionStatus:
             self.connect()
+
         if self.connectionStatus:
-            self.socket.sendall(DATA_SEPARATOR.join([LOGIN_PREFIX, login, passwd]).encode())
-            response = self.socket.recv(MAX_DATA_LENGTH).decode()
+            message: str = DATA_SEPARATOR.join([LOGIN_PREFIX, login, passwd])
+            print(f'Send to server: {message}')
+            self.socket.sendall(message.encode())
+
+            response = str(self.socket.recv(MAX_DATA_LENGTH))
+            endIndex = response.index('\\x00')
+            response = response[2:endIndex]
+            print(f'Got response from server: {response}')
             if response[0] == ERROR_VALUE:
                 return response[2:]
             return None
@@ -34,49 +42,135 @@ class ServerRequests():
     def sendRegisterData(self, login: str, passwd: str) -> Union[None, str]:
         if not self.connectionStatus:
             self.connect()
+
         if self.connectionStatus:
-            self.socket.sendall(DATA_SEPARATOR.join([REGISTER_PREFIX, login, passwd]).encode())
-            response = self.socket.recv(MAX_DATA_LENGTH).decode()
+            message: str = DATA_SEPARATOR.join([REGISTER_PREFIX, login, passwd])
+            print(f'Send to server: {message}')
+            self.socket.sendall(message.encode())
+
+            response = str(self.socket.recv(MAX_DATA_LENGTH))
+            endIndex = response.index('\\x00')
+            response = response[2:endIndex]
+            print(f'Got response from server: {response}')
             if response[0] == ERROR_VALUE:
                 return response[2:]
             return None
         return 'Cannot connect to the server'
 
     def sendLogoutData(self, login: str) -> Union[None, str]:
-        self.socket.sendall(DATA_SEPARATOR.join([LOGOUT_PREFIX, login]).encode())
-        response = self.socket.recv(1024).decode()
-        if response[0] != '1':
+        message = DATA_SEPARATOR.join([LOGOUT_PREFIX, login])
+        print(f'Send to server: {message}')
+        self.socket.sendall(message.encode())
+
+        response = str(self.socket.recv(MAX_DATA_LENGTH))
+        endIndex = response.index('\\x00')
+        response = response[2:endIndex]
+        print(f'Got response from server: {response}')
+        if response[0] == ERROR_VALUE:
             return response[2:]
         return None
 
-    def sendNewCalendarData(self, name: str, userList: str):
-        userList = userList.replace(' ', '')
-        userList = userList.replace(',', ' ')
+    def closingApp(self, login: Union[str, None] = None) -> None:
+        if login is None:
+            self.socket.sendall(DATA_SEPARATOR.join([CLOSING_APP_PREFIX, ""]).encode())
+        else:
+            self.socket.sendall(DATA_SEPARATOR.join([CLOSING_APP_PREFIX, login]).encode())
+
+    def sendNewCalendarData(self, name: str, owner: str, userList: List[str]):
         if self.connectionStatus:
-            self.socket.sendall(
-                f'{name} {userList}'.encode()
-            )
-            response = self.socket.recv(1024).decode()
-            if response[0] != '1':
+            message = DATA_SEPARATOR.join([CALENDAR_INSERT_PREFIX, name, owner, *userList])
+            print(f'Send to server: {message}')
+            self.socket.sendall(message.encode())
+
+            response = str(self.socket.recv(MAX_DATA_LENGTH))
+            endIndex = response.index('\\x00')
+            response = response[2:endIndex]
+            print(f'Got response from server: {response}')
+            if response[0] == ERROR_VALUE:
                 return response[2:]
             return None
-        return None
         return 'Cannot connect to the server'
 
+    def sendModifyCalendarData(self, oldName: str, newName: str, username: str):
+        message = DATA_SEPARATOR.join([CALENDAR_MODIFY_PREFIX, oldName, newName, username])
+        print(f'Send to server: {message}')
+        self.socket.sendall(message.encode())
 
-    def getCalendars(self) -> List[Calendar]:
-        #amount = int(self.socket.recv(10).decode())
-        amount = 10
-        calendarList = []
-        for _ in range(amount):
-            #calendarData = self.socket.recv(2048).decode().split(';')
-            calendarData = ['calendar 1', 'aaa', 'user1', 'user2']
-            calendarList.append(Calendar(calendarData[0], calendarData[1], calendarData[2:]))
-        return calendarList
+        response = str(self.socket.recv(MAX_DATA_LENGTH))
+        endIndex = response.index('\\x00')
+        response = response[2:endIndex]
+        print(f'Got response from server: {response}')
+        if response[0] == ERROR_VALUE:
+            return response[2:]
+        return None
 
-    def closing(self, login: Union[str, None] = None) -> None:
-        if login is None:
-            self.socket.sendall(DATA_SEPARATOR.join([LOGOUT_PREFIX, ""]).encode())
-        else:
-            self.socket.sendall(DATA_SEPARATOR.join([LOGOUT_PREFIX, login]).encode())
+    def sendNewUserCalendarData(self, name: str, userToAdd: str, username: str):
+        message = DATA_SEPARATOR.join([CALENDAR_INSERT_USER_PREFIX, name, userToAdd, username])
+        self.socket.sendall(message.encode())
+
+        response = str(self.socket.recv(MAX_DATA_LENGTH))
+        endIndex = response.index('\\x00')
+        response = response[2:endIndex]
+        print(f'Got response from server: {response}')
+        if response[0] == ERROR_VALUE:
+            return response[2:]
+        return None
+
+    def sendDeleteUserCalendarData(self, name: str, userToDelete:str, username: str):
+        message = DATA_SEPARATOR.join([CALENDAR_DELETE_USER_PREFIX, name, userToDelete, username])
+        print(f'Send to server: {message}')
+        self.socket.sendall(message.encode())
+
+        response = str(self.socket.recv(MAX_DATA_LENGTH))
+        endIndex = response.index('\\x00')
+        response = response[2:endIndex]
+        print(f'Got response from server: {response}')
+        if response[0] == ERROR_VALUE:
+            return response[2:]
+        return None
+
+    def sendDeleteCalendarData(self, name: str, username: str):
+        message = DATA_SEPARATOR.join([CALENDAR_DELETE_PREFIX, name, username])
+        print(f'Send to server: {message}')
+        self.socket.sendall(message.encode())
+
+        response = str(self.socket.recv(MAX_DATA_LENGTH))
+        endIndex = response.index('\\x00')
+        response = response[2:endIndex]
+        print(f'Got response from server: {response}')
+        if response[0] == ERROR_VALUE:
+            return response[2:]
+        return None
+
+    def getCalendars(self, username: str) -> List[str]:
+        message = DATA_SEPARATOR.join([CALENDAR_GET_NAMES, username])
+        print(f'Send to server: {message}')
+        self.socket.sendall(message.encode())
+
+        response = str(self.socket.recv(MAX_DATA_LENGTH))
+        endIndex = response.index('\\x00')
+        response = response[2:endIndex]
+        print(f'Got response from server: {response}')
+        if response[0] == ERROR_VALUE:
+            return []
+        return response[2:].split(DATA_SEPARATOR)
+
+    def getCalendarInfo(self, name: str) -> Union[Calendar, None]:
+        message = DATA_SEPARATOR.join([CALENDAR_GET_CALENDAR_INFO, name])
+        print(f'Send to server: {message}')
+        self.socket.sendall(message.encode())
+
+        response = str(self.socket.recv(MAX_DATA_LENGTH))
+        endIndex = response.index('\\x00')
+        response = response[2:endIndex]
+        print(f'Got response from server: {response}')
+        if response[0] == ERROR_VALUE:
+            return None
+
+        response = response[2:].split(DATA_SEPARATOR)
+        if len(response) < 2:
+            return None
+        elif len(response) == 2:
+            return Calendar(response[0], response[1])
+        return Calendar(response[0], response[1], response[2:])
 

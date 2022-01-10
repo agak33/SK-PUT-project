@@ -35,7 +35,7 @@ public:
     std::map<std::string, function> functionMap;
 
     int serverSocket;
-    sockaddr_in server_addr;
+    sockaddr_in server_addr = {0};
 
     Server( const int& app_port, const std::string& app_host, 
             const int& queue_size = 5, const int& max_connected_clients = 50){
@@ -54,29 +54,37 @@ public:
         valueCheck(bind(serverSocket, (sockaddr*)&server_addr, sizeof(server_addr)), "Bind error", "");
         valueCheck(listen(serverSocket, QUEUE_SIZE), "Listen error", "");
 
-        functionMap[LOGIN_PREFIX] = &Data::loginUser;
-        functionMap[REGISTER_PREFIX] = &Data::registerUser;
-        functionMap[LOGOUT_PREFIX] = &Data::logoutUser;
+        functionMap[LOGIN_PREFIX]                   = &Data::loginUser;
+        functionMap[REGISTER_PREFIX]                = &Data::registerUser;
+        functionMap[LOGOUT_PREFIX]                  = &Data::logoutUser;
+        functionMap[CLOSING_APP_PREFIX]             = &Data::logoutUser;
 
-        functionMap[CALENDAR_INSERT_PREFIX] = &Data::insertCalendar;
-        functionMap[CALENDAR_MODIFY_PREFIX] = &Data::modifyCalendar;
-        functionMap[CALENDAR_DELETE_PREFIX] = &Data::deleteCalendar;
+        functionMap[CALENDAR_INSERT_PREFIX]         = &Data::insertCalendar;
+        functionMap[CALENDAR_MODIFY_PREFIX]         = &Data::modifyCalendarName;
+        functionMap[CALENDAR_DELETE_PREFIX]         = &Data::deleteCalendar;
 
-        functionMap[EVENT_INSERT_PREFIX] = &Data::insertEvent;
-        functionMap[EVENT_MODIFY_PREFIX] = &Data::modifyEvent;
-        functionMap[EVENT_DELETE_PREFIX] = &Data::deleteEvent;
+        functionMap[CALENDAR_INSERT_USER_PREFIX]    = &Data::insertCalendarUser;
+        functionMap[CALENDAR_DELETE_USER_PREFIX]    = &Data::deleteCalendarUser;
+        functionMap[CALENDAR_GET_NAMES]             = &Data::getCalendars;
+        functionMap[CALENDAR_GET_CALENDAR_INFO]     = &Data::getCalendarInfo;
+
+        functionMap[EVENT_INSERT_PREFIX]            = &Data::insertEvent;
+        functionMap[EVENT_MODIFY_PREFIX]            = &Data::modifyEvent;
+        functionMap[EVENT_DELETE_PREFIX]            = &Data::deleteEvent;
+
+        std::cout << "Starting server at " << this->APPLICATION_PORT << " port" << std::endl;
     }
 
     ~Server(){
-        for(int i = 0; i < threadData.size(); i++){
+        for(size_t i = 0; i < threadData.size(); i++){
             threadData[i]->disconnect = true;
         }
         std::cout << "Waiting for threads..." << std::endl;
-        for(int i = 0; i < threads.size(); i++){
+        for(size_t i = 0; i < threads.size(); i++){
             threads[i].join();
         }
         std::cout << "Deleting data..." << std::endl;
-        for(int i = 0; i < threadData.size(); i++){
+        for(size_t i = 0; i < threadData.size(); i++){
             delete threadData[i];
         }
 
@@ -103,31 +111,49 @@ public:
                         message = std::string(buff);
                         prefix = message.substr(0, message.find(DATA_SEPARATOR));
 
+                        if(prefix == LOGIN_PREFIX || prefix == LOGOUT_PREFIX || prefix == REGISTER_PREFIX || prefix == CLOSING_APP_PREFIX){
+                            message += MESSAGE_SEPARATOR + std::to_string(thData->descriptors[i].fd);
+                        }
+
                         std::map<std::string, function>::iterator func = functionMap.find(prefix);
                         if(func == functionMap.end()){
                             std::cout << "Unknown message prefix: " << prefix << std::endl;
                             memset(buff, 0, BUFFER_SIZE);
-                            sprintf(buff, "Server error occured.");
+                            message = FAILURE_CODE + std::string(MESSAGE_SEPARATOR) + "Server error occured.";
+                            sprintf(buff, "%s", message.c_str());
                         }
                         else{
-                            message = (data.*func->second)(prefix);
+                            message = message.substr(prefix.size() + 1);
+                            std::cout << "MESSAGE TO FUNCTION: " << message << std::endl;
+                            message = (data.*func->second)(message);
+                            std::cout << "MESSAGE FROM FUNCTION: " << message << std::endl;
                             memset(buff, 0, BUFFER_SIZE);
+                            sprintf(buff, "%s", message.c_str());
                         }
-
-                        write(thData->descriptors[i].fd, buff, BUFFER_SIZE);
+                        if(prefix != CLOSING_APP_PREFIX) write(thData->descriptors[i].fd, buff, BUFFER_SIZE);
+                        else if(prefix == CLOSING_APP_PREFIX) thData->removeDescriptor(thData->descriptors[i].fd);
                     }
                 }
+                //data.displayCalendars();
+                //data.displayUsers();
             }
 
             if(thData->descriptorsNum == 0){
                 break;
             }
         }
-        std::cout << "Disconnectiong thread..." << std::endl;
+        std::cout << "Disconnected thread..." << std::endl;
+        std::cout << "Deleting thread data..." << std::endl;
+
+        std::vector<ThreadData*>::iterator thDataPos = std::find(threadData.begin(), threadData.end(), thData);
+        threadData.erase(thDataPos);
+        delete thData;
+
+        std::cout << "Thread disconnected" << std::endl;
     }
 
     int threadWithFreeSlots(){
-        for(int i = 0; i < threadData.size(); i++){
+        for(size_t i = 0; i < threadData.size(); i++){
             if(threadData[i]->freeSlots()){
                 return i;
             }

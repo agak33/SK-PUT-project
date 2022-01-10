@@ -27,7 +27,7 @@
      <x>10</x>
      <y>80</y>
      <width>491</width>
-     <height>421</height>
+     <height>461</height>
     </rect>
    </property>
    <property name="widgetResizable">
@@ -39,7 +39,7 @@
       <x>0</x>
       <y>0</y>
       <width>489</width>
-      <height>419</height>
+      <height>459</height>
      </rect>
     </property>
     <widget class="QListWidget" name="calendarList">
@@ -48,7 +48,7 @@
        <x>0</x>
        <y>0</y>
        <width>491</width>
-       <height>421</height>
+       <height>461</height>
       </rect>
      </property>
     </widget>
@@ -82,7 +82,7 @@
      <x>510</x>
      <y>80</y>
      <width>371</width>
-     <height>421</height>
+     <height>461</height>
     </rect>
    </property>
    <property name="frameShape">
@@ -95,9 +95,9 @@
     <property name="geometry">
      <rect>
       <x>80</x>
-      <y>380</y>
+      <y>424</y>
       <width>191</width>
-      <height>25</height>
+      <height>31</height>
      </rect>
     </property>
     <property name="text">
@@ -108,7 +108,7 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>20</y>
+      <y>54</y>
       <width>67</width>
       <height>31</height>
      </rect>
@@ -121,7 +121,7 @@
     <property name="geometry">
      <rect>
       <x>80</x>
-      <y>20</y>
+      <y>54</y>
       <width>281</width>
       <height>31</height>
      </rect>
@@ -134,7 +134,7 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>56</y>
+      <y>90</y>
       <width>67</width>
       <height>31</height>
      </rect>
@@ -143,11 +143,11 @@
      <string>Owner:</string>
     </property>
    </widget>
-   <widget class="QLabel" name="calendarOwnerName">
+   <widget class="QLabel" name="calendarOwnerLabel">
     <property name="geometry">
      <rect>
       <x>80</x>
-      <y>56</y>
+      <y>90</y>
       <width>281</width>
       <height>31</height>
      </rect>
@@ -160,7 +160,7 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>100</y>
+      <y>130</y>
       <width>351</width>
       <height>31</height>
      </rect>
@@ -173,9 +173,9 @@
     <property name="geometry">
      <rect>
       <x>10</x>
-      <y>140</y>
+      <y>170</y>
       <width>351</width>
-      <height>191</height>
+      <height>241</height>
      </rect>
     </property>
     <property name="widgetResizable">
@@ -187,7 +187,7 @@
        <x>0</x>
        <y>0</y>
        <width>349</width>
-       <height>189</height>
+       <height>239</height>
       </rect>
      </property>
      <widget class="QListWidget" name="calendarUserList">
@@ -196,7 +196,7 @@
         <x>0</x>
         <y>0</y>
         <width>351</width>
-        <height>192</height>
+        <height>241</height>
        </rect>
       </property>
      </widget>
@@ -206,9 +206,9 @@
     <property name="geometry">
      <rect>
       <x>80</x>
-      <y>350</y>
+      <y>10</y>
       <width>191</width>
-      <height>25</height>
+      <height>31</height>
      </rect>
     </property>
     <property name="text">

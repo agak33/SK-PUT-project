@@ -2,7 +2,7 @@
 #include "serverFunctions.h"
 
 #pragma once
-#define descNum 1
+#define descNum 5
 
 class ThreadData{
 public:
@@ -29,6 +29,19 @@ public:
             close(descriptors[i].fd);
             std::cout << "Descriptor " << descriptors[i].fd << " closed" << std::endl;
         }
+    }
+
+    bool operator==(const ThreadData& threadData){
+        if( this->descriptorsNum == threadData.descriptorsNum && 
+            this->timeout == threadData.timeout && 
+            this->disconnect == threadData.disconnect){
+                for(int i = 0; i < this->descriptorsNum; i++){
+                    if(this->descriptors[i].fd != threadData.descriptors[i].fd){
+                        return false;
+                    }
+                }
+        }
+        return true;
     }
 
     bool freeSlots(){

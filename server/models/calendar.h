@@ -7,12 +7,12 @@
 #pragma once
 
 class Calendar{
+public:
     std::string name;
     std::vector<Event> events;
     std::string* owner;
     std::vector<std::string*> userList;
 
-public:
     Calendar(const std::string& name, std::string* owner){
         this->name  = name;
         this->owner = owner;
@@ -23,7 +23,7 @@ public:
     }
 
     friend std::ostream& operator<<(std::ostream& os, const Calendar& calendar){
-        os << "Calendar: " << calendar.name;
+        os << "Calendar: " << calendar.name << " Owner: " << *(calendar.owner) << " " << calendar.owner << std::endl;
         return os;
     }
 

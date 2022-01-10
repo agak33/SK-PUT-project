@@ -4,6 +4,8 @@ from serverRequests import ServerRequests
 from PyQt5 import QtWidgets, uic
 from functools import partial
 import threading
+from typing import Union, Any, List
+from calendar import Calendar
 
 from userInfo import UserInfo
 
@@ -22,12 +24,14 @@ class App(object):
         self.eventList      = []
 
         self.setupMainWindow()
-        self.loginWindow()
+        self.loginWindow()   
 
     def setupMainWindow(self) -> None:
         uic.loadUi(f'{SCREEN_MODELS_FOLDER}/{MAIN_APP_WINDOW}', self.mainWindow)
 
-        self.mainWindow.actionCalendarList.triggered.connect(self.calendarListWindow)
+        self.mainWindow.actionCalendarList.triggered.connect(
+            lambda: self.calendarListWindow(self.server.getCalendars(self.user.username))
+        )
         self.mainWindow.actionAddNewCalendar.triggered.connect(self.newCalendarWindow)
         self.mainWindow.actionLogout.triggered.connect(self.logout)
 
@@ -37,33 +41,45 @@ class App(object):
 
     def loginWindow(self) -> None:
         self.loadScreen(f'{SCREEN_MODELS_FOLDER}/{SCREEN_LOGIN_REGISTER}')
-        self.screen.loginButton.clicked.connect(
-            lambda: self.executeThread(self.screen.errorLoginLabel, self.login)
-        )
-        self.screen.registerButton.clicked.connect(
-            lambda: self.executeThread(self.screen.errorRegisterLabel, self.register)
-        )
+        self.screen.loginButton.clicked.connect(self.login)
+        self.screen.registerButton.clicked.connect(self.register)
         self.screen.show()
 
-    def calendarListWindow(self) -> None:
-        self.loadScreen(f'{SCREEN_MODELS_FOLDER}/{SCREEN_CALENDAR_LIST}')     
+    def calendarListWindow(self, calendarList: List[str]) -> None:
+        self.loadScreen(f'{SCREEN_MODELS_FOLDER}/{SCREEN_CALENDAR_LIST}')
+        self.screen.calendarList.clear()
+        self.screen.calendarList.addItems(calendarList)
 
+        self.screen.calendarList.itemClicked.connect(self.displayCalendarInfo)
+        self.screen.calendarOpenButton.clicked.connect(self.openCalendar)
+        self.screen.calendarDeleteButton.clicked.connect(self.deleteCalendar)
         self.mainWindow.setCentralWidget(self.screen)
         self.mainWindow.show()
+
+    def displayCalendarInfo(self) -> None:
+        calendar: Calendar = self.server.getCalendarInfo(self.screen.calendarList.currentItem().text())
+        self.screen.calendarUserList.clear()
+        if calendar is not None:
+            self.screen.calendarInfoFrame.setEnabled(True)
+            self.screen.calendarNameLabel.setText(calendar.name)
+            self.screen.calendarOwnerLabel.setText(calendar.owner)
+            self.screen.calendarUserList.addItems(calendar.userList)
+
+            if calendar.owner != self.user.username:
+                self.screen.calendarDeleteButton.setEnabled(False)
+            else:
+                self.screen.calendarDeleteButton.setEnabled(True)
+        else:
+            self.screen.errorLabel.setText('Calendar not exists')
+            calendarList = self.server.getCalendars(self.user.username)
+            self.screen.calendarList.clear()
+            self.screen.calendarList.addItems(calendarList)
 
     def newCalendarWindow(self) -> None:
-        self.loadScreen(f'{SCREEN_MODELS_FOLDER}/{SCREEN_NEW_CALENDAR}')     
-
+        self.loadScreen(f'{SCREEN_MODELS_FOLDER}/{SCREEN_NEW_CALENDAR}')
+        self.screen.newCalendarConfirmButton.clicked.connect(self.newCalendar)
         self.mainWindow.setCentralWidget(self.screen)
-        self.mainWindow.show()
-
-    def executeThread(self, errorLabel, target, args=()):
-        if not self.thread.is_alive():
-            self.thread = threading.Thread(target=target, args=args)
-            print('starting thread...')
-            self.thread.start()
-        else:
-            errorLabel.setText('Waiting for server to response')        
+        self.mainWindow.show()  
 
     def login(self) -> None:
         login, passwd = self.screen.loginLoginField.text(), self.screen.passwordLoginField.text()
@@ -74,10 +90,10 @@ class App(object):
         else:
             message = self.server.sendLoginData(login, passwd)
             if message is None:
-                self.calendarListWindow()
+                self.user = UserInfo(login, passwd)
+                self.calendarListWindow(self.server.getCalendars(login))
             else:
                 self.screen.errorLoginLabel.setText(message)
-        print('finishing thread...')
 
     def register(self) -> None:
         login, passwd = self.screen.loginRegisterField.text(), self.screen.passwordRegisterField.text()
@@ -88,24 +104,57 @@ class App(object):
         else:
             message = self.server.sendRegisterData(login, passwd)
             if message is None:
-                self.calendarListWindow()
+                self.user = UserInfo(login, passwd)
+                self.calendarListWindow([])
             else:
                 self.screen.errorRegisterLabel.setText(message)
     
     def logout(self) -> None:
+        message = self.server.sendLogoutData(self.user.username)
+        if message is None:
+            self.user = UserInfo()
+        else:
+            print(message)
         self.mainWindow.close()
         self.loginWindow()
 
     def exit(self) -> None:
-        print('closing...')
-        if self.thread.is_alive():
-            print('waiting for thread...')
-            self.thread.join()
         if self.server.connectionStatus:
-            self.thread = threading.Thread(target=self.server.closing, args=(self.user.username,))
-            self.thread.start()
-            self.thread.join()
-        print('closing app')
+            self.server.closingApp(self.user.username)
+        print('app closed')
 
+    def newCalendar(self) -> None:
+        name = self.screen.newCalendarNameField.text()
+        userList = self.screen.newCalendarUserListField.text()
+        if name == '':
+            self.screen.errorLabel.setText('Calendar name cannot be empty')
+        elif DATA_SEPARATOR in name:
+            self.screen.errorLabel.setText(f'Calendar name cannot contain {DATA_SEPARATOR} signs')
+        else:
+            userList = userList.split(DATA_SEPARATOR)
+            for i in range(len(userList)):
+                userList[i] = userList[i].strip()
+            try:
+                while len(userList) > 0:
+                    userList.remove('')
+            except ValueError:
+                pass
+            message = self.server.sendNewCalendarData(name, self.user.username, userList)
+            if message is None:
+                self.screen.errorLabel.setText('Successfully added calendar')
+            else:
+                self.screen.errorLabel.setText(message)
 
+    def openCalendar(self) -> None:
+        print('open calendar...')
+
+    def deleteCalendar(self) -> None:
+        message = self.server.sendDeleteCalendarData(self.screen.calendarNameLabel.text(), self.user.username)
+        if message is None:
+            self.screen.errorLabel.setText('Calendar deleted')
+            calendarList = self.server.getCalendars(self.user.username)
+            self.screen.calendarList.clear()
+            self.screen.calendarList.addItems(calendarList)
+        else:
+            self.screen.errorLabel.setText(message)
 

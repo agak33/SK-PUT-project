@@ -116,7 +116,7 @@
     </rect>
    </property>
    <property name="currentIndex">
-    <number>2</number>
+    <number>0</number>
    </property>
    <widget class="QWidget" name="tab">
     <attribute name="title">
@@ -294,6 +294,19 @@
       <string>Confirm</string>
      </property>
     </widget>
+    <widget class="QLabel" name="newEvenErrorLabel">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>280</y>
+       <width>361</width>
+       <height>51</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>TextLabel</string>
+     </property>
+    </widget>
    </widget>
    <widget class="QWidget" name="tab_2">
     <attribute name="title">
@@ -303,7 +316,7 @@
      <property name="geometry">
       <rect>
        <x>10</x>
-       <y>300</y>
+       <y>250</y>
        <width>171</width>
        <height>31</height>
       </rect>
@@ -316,7 +329,7 @@
      <property name="geometry">
       <rect>
        <x>190</x>
-       <y>300</y>
+       <y>250</y>
        <width>171</width>
        <height>31</height>
       </rect>
@@ -329,9 +342,9 @@
      <property name="geometry">
       <rect>
        <x>10</x>
-       <y>340</y>
-       <width>361</width>
-       <height>111</height>
+       <y>290</y>
+       <width>351</width>
+       <height>101</height>
       </rect>
      </property>
      <property name="frameShape">
@@ -361,7 +374,7 @@
        <rect>
         <x>100</x>
         <y>10</y>
-        <width>251</width>
+        <width>241</width>
         <height>31</height>
        </rect>
       </property>
@@ -399,7 +412,7 @@
        <x>10</x>
        <y>10</y>
        <width>351</width>
-       <height>281</height>
+       <height>231</height>
       </rect>
      </property>
      <property name="widgetResizable">
@@ -411,7 +424,7 @@
         <x>0</x>
         <y>0</y>
         <width>349</width>
-        <height>279</height>
+        <height>229</height>
        </rect>
       </property>
       <widget class="QListWidget" name="listWidget">
@@ -420,11 +433,78 @@
          <x>0</x>
          <y>0</y>
          <width>351</width>
-         <height>281</height>
+         <height>231</height>
         </rect>
        </property>
       </widget>
      </widget>
+    </widget>
+    <widget class="QLabel" name="newUserErrorLabel">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>400</y>
+       <width>361</width>
+       <height>51</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>TextLabel</string>
+     </property>
+    </widget>
+   </widget>
+   <widget class="QWidget" name="tab_4">
+    <attribute name="title">
+     <string>Modify name</string>
+    </attribute>
+    <widget class="QPushButton" name="newCalendarNameButton">
+     <property name="geometry">
+      <rect>
+       <x>80</x>
+       <y>120</y>
+       <width>191</width>
+       <height>41</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>Confirm</string>
+     </property>
+    </widget>
+    <widget class="QLineEdit" name="newCalendarNameField">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>60</y>
+       <width>361</width>
+       <height>41</height>
+      </rect>
+     </property>
+    </widget>
+    <widget class="QLabel" name="label_2">
+     <property name="geometry">
+      <rect>
+       <x>16</x>
+       <y>19</y>
+       <width>351</width>
+       <height>31</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>New calendar name:</string>
+     </property>
+    </widget>
+    <widget class="QLabel" name="newCalendarNameErrorLabel">
+     <property name="geometry">
+      <rect>
+       <x>10</x>
+       <y>180</y>
+       <width>361</width>
+       <height>51</height>
+      </rect>
+     </property>
+     <property name="text">
+      <string>TextLabel</string>
+     </property>
     </widget>
    </widget>
   </widget>

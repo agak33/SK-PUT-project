@@ -6,6 +6,3 @@ class Calendar(object):
         self.name:           str = name
         self.owner:          str = owner
         self.userList: List[str] = userList
-
-    def addUser(self, username: str):
-        self.userList.append(username)
