@@ -18,8 +18,6 @@
 
 #pragma once
 
-#define BUFFER_SIZE 1024
-
 class Server{
 public:
     int QUEUE_SIZE;
@@ -28,12 +26,14 @@ public:
     std::string APPLICATION_HOST;
 
     Data data;
+
     std::vector<std::thread> threads;
     std::vector<ThreadData*> threadData;
 
     typedef std::string (Data::*function)(std::string);
     std::map<std::string, function> functionMap;
 
+    int nFoo;
     int serverSocket;
     sockaddr_in server_addr = {0};
 
@@ -49,8 +49,11 @@ public:
         server_addr.sin_port        = htons(APPLICATION_PORT);
         server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
 
+        nFoo = 1;
+
         serverSocket = socket(AF_INET, SOCK_STREAM, 0);
         valueCheck(serverSocket, "Socket error", "");
+        valueCheck(setsockopt(serverSocket, SOL_SOCKET, SO_REUSEADDR, (char*)&nFoo, sizeof(nFoo)), "Setsockopt error", "");
         valueCheck(bind(serverSocket, (sockaddr*)&server_addr, sizeof(server_addr)), "Bind error", "");
         valueCheck(listen(serverSocket, QUEUE_SIZE), "Listen error", "");
 
@@ -65,8 +68,11 @@ public:
 
         functionMap[CALENDAR_INSERT_USER_PREFIX]    = &Data::insertCalendarUser;
         functionMap[CALENDAR_DELETE_USER_PREFIX]    = &Data::deleteCalendarUser;
-        functionMap[CALENDAR_GET_NAMES]             = &Data::getCalendars;
-        functionMap[CALENDAR_GET_CALENDAR_INFO]     = &Data::getCalendarInfo;
+
+        functionMap[CALENDAR_GET_NAMES_PREFIX]      = &Data::getCalendars;
+        functionMap[CALENDAR_GET_INFO_PREFIX]       = &Data::getCalendarInfo;        
+        functionMap[CALENDAR_GET_EVENTS_PREFIX]     = &Data::getEventsForDay;
+        functionMap[CALENDAR_GET_USERS_PREFIX]      = &Data::getCalendarUserList;
 
         functionMap[EVENT_INSERT_PREFIX]            = &Data::insertEvent;
         functionMap[EVENT_MODIFY_PREFIX]            = &Data::modifyEvent;
@@ -134,8 +140,8 @@ public:
                         else if(prefix == CLOSING_APP_PREFIX) thData->removeDescriptor(thData->descriptors[i].fd);
                     }
                 }
-                //data.displayCalendars();
-                //data.displayUsers();
+                // data.displayCalendars();
+                // data.displayUsers();
             }
 
             if(thData->descriptorsNum == 0){

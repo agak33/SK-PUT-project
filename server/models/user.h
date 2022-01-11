@@ -11,6 +11,7 @@ public:
     int userFd;
     //std::vector<Calendar*> userCalendars;
 
+    User() {};
     // used while creating a new user with read a file
     User(const std::string& username, const std::string& password){
         this->username   = username;

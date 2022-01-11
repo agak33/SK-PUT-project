@@ -17,6 +17,10 @@ void signal_handler(int signal){
     exit(0);
 }
 
+void sigpipe_handler(int signal){
+    std::cout << "SIGPIPE OCCURED" << std::endl;
+}
+
 int main(int argc, char** argv){
     if(argc < 3){
         std::cout << "You have entered not enough arguments" << std::endl;
@@ -24,6 +28,7 @@ int main(int argc, char** argv){
         exit(0);
     }    
     std::signal(SIGINT, signal_handler);
+    std::signal(SIGPIPE, sigpipe_handler);
     switch(argc){
         case 3:
             server = new Server(atoi(argv[1]), argv[2]);

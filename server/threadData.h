@@ -2,11 +2,10 @@
 #include "serverFunctions.h"
 
 #pragma once
-#define descNum 5
 
 class ThreadData{
 public:
-    pollfd descriptors[descNum];
+    pollfd descriptors[MAX_DESCRIPTORS_NUM];
     int descriptorsNum;
     int timeout;
     bool disconnect;
@@ -17,9 +16,9 @@ public:
         this->disconnect = false;
     }
 
-    ThreadData(int clientFd){
+    ThreadData(int clientFd, int timeout = 2500){
         this->descriptorsNum = 0;
-        this->timeout = 2500;
+        this->timeout = timeout;
         this->disconnect = false;
         this->newDescriptor(clientFd);
     }
@@ -45,11 +44,11 @@ public:
     }
 
     bool freeSlots(){
-        return this->descriptorsNum < descNum;
+        return this->descriptorsNum < MAX_DESCRIPTORS_NUM;
     }
 
     result newDescriptor(int fd){
-        if(this->descriptorsNum == descNum){
+        if(this->descriptorsNum == MAX_DESCRIPTORS_NUM){
             return FAILURE;
         }
         this->descriptors[descriptorsNum].fd = fd;
