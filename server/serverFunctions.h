@@ -1,7 +1,8 @@
 #include <iostream>
 #pragma once
 
-#define DATA_SEPARATOR          ";"
+#define DATA_SEPARATOR ";"
+#define DATA_END       '\n'
 
 #define LOGIN_PREFIX            "L"
 #define REGISTER_PREFIX         "R"
@@ -26,11 +27,11 @@
 
 #define SUCCESS_CODE "0"
 #define FAILURE_CODE "1"
-#define MESSAGE_SEPARATOR ";"
 
 #define MAX_DESCRIPTORS_NUM 5
+//#define MAX_CONNECTED_CLIENTS 50
 #define MAX_CLIENT_NUMBER 100
-#define BUFFER_SIZE 1024
+#define BUFFER_SIZE 5
 
 enum result{SUCCESS, FAILURE};
 

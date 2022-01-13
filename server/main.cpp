@@ -1,14 +1,6 @@
-#include "models/user.h"
-#include "serverFunctions.h"
+
 #include "server.h"
 
-#include <iostream>
-#include <string>
-#include <string.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
-#include <unistd.h>
-#include <pthread.h>
 
 Server* server;
 
@@ -23,8 +15,8 @@ void sigpipe_handler(int signal){
 
 int main(int argc, char** argv){
     if(argc < 3){
-        std::cout << "You have entered not enough arguments" << std::endl;
-        std::cout << "Proper execute command: path_to_file host_port host_name <queue_size> <max_connected_clients>" << std::endl;
+        std::cout << "Too few arguments to run server" << std::endl;
+        std::cout << "To run: path_to_program_file host_port host_name" << std::endl;
         exit(0);
     }    
     std::signal(SIGINT, signal_handler);

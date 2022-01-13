@@ -25,6 +25,6 @@ public:
         return  this->name == event.name && 
                 this->date == event.date &&
                 this->hourBeginning == event.hourBeginning &&
-                this->owner == event.owner;
+                *(this->owner) == *(event.owner);
     }
 };

@@ -1,18 +1,12 @@
-#include <iostream>
-#include <vector>
 #include <map>
-#include <fstream>
-#include <string>
-#include <string.h>
+#include <cstring>
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <unistd.h>
 #include <thread>
 #include <csignal>
+#include <algorithm>
 
-#include "models/user.h"
-#include "models/calendar.h"
-#include "serverFunctions.h"
 #include "data.h"
 #include "threadData.h"
 
@@ -24,6 +18,7 @@ public:
     int APPLICATION_PORT;
     int MAX_CONNECTED_CLIENTS;
     std::string APPLICATION_HOST;
+    int MAX_THREAD_NUMBER;
 
     Data data;
 
@@ -38,12 +33,16 @@ public:
     sockaddr_in server_addr = {0};
 
     Server( const int& app_port, const std::string& app_host, 
-            const int& queue_size = 5, const int& max_connected_clients = 50){
+            const int& queue_size = 5, const int& max_connected_clients = 3){
 
         this->APPLICATION_PORT      = app_port;
         this->APPLICATION_HOST      = app_host;
         this->QUEUE_SIZE            = queue_size;
         this->MAX_CONNECTED_CLIENTS = max_connected_clients;
+        this->MAX_THREAD_NUMBER     = max_connected_clients / MAX_DESCRIPTORS_NUM;
+
+        this->threads.reserve(MAX_THREAD_NUMBER);
+        this->threadData.reserve(MAX_THREAD_NUMBER);
 
         server_addr.sin_family      = AF_INET;
         server_addr.sin_port        = htons(APPLICATION_PORT);
@@ -78,14 +77,15 @@ public:
         functionMap[EVENT_MODIFY_PREFIX]            = &Data::modifyEvent;
         functionMap[EVENT_DELETE_PREFIX]            = &Data::deleteEvent;
 
-        std::cout << "Starting server at " << this->APPLICATION_PORT << " port" << std::endl;
+        std::cout << "Starting server at " << this->APPLICATION_HOST <<  " port " << this->APPLICATION_PORT << std::endl;
     }
 
     ~Server(){
+        std::cout << "Server deconstructor called" << std::endl;
         for(size_t i = 0; i < threadData.size(); i++){
             threadData[i]->disconnect = true;
         }
-        std::cout << "Waiting for threads..." << std::endl;
+        std::cout << "Waiting for threads to join" << std::endl;
         for(size_t i = 0; i < threads.size(); i++){
             threads[i].join();
         }
@@ -101,10 +101,8 @@ public:
     void threadFunction(ThreadData* thData){
         char buff[BUFFER_SIZE];
         std::string message, prefix;
-        int pollResult;
-        while(!thData->disconnect){
-            pollResult = poll(thData->descriptors, thData->descriptorsNum, thData->timeout);
-            if(pollResult == -1){
+        while(!thData->disconnect && thData->descriptorsNum > 0){
+            if(poll(thData->descriptors, thData->descriptorsNum, thData->timeout) == -1){
                 std::cout << "Poll error" << std::endl;
                 exit(SIGINT);
             } else{
@@ -112,47 +110,54 @@ public:
                     if(thData->descriptors[i].revents & POLLIN){
                         std::cout << "reading data from client..." << std::endl;
                         memset(buff, 0, BUFFER_SIZE);
-                        read(thData->descriptors[i].fd, buff, BUFFER_SIZE);                       
+                        if(read(thData->descriptors[i].fd, buff, BUFFER_SIZE) == 0){
+                            data.logoutUser(thData->descriptors[i].fd);
+                            thData->removeDescriptor(thData->descriptors[i].fd);
+                        } else {
+                            thData->addBuffer(buff, i);
+                            if(thData->readyToRead(i)){
+                                message = thData->getMessage(i);
+                                prefix  = thData->getPrefix(message);
+                                message = thData->getArguments(message, i);
 
-                        message = std::string(buff);
-                        prefix = message.substr(0, message.find(DATA_SEPARATOR));
+                                std::map<std::string, function>::iterator func = functionMap.find(prefix);
+                                if(func == functionMap.end()){
+                                    std::cout << "Unknown message prefix: " << prefix << std::endl;
+                                    message = FAILURE_CODE + std::string(DATA_SEPARATOR) + "Server error occured." + DATA_END;
+                                }
+                                else{
+                                    std::cout << "MESSAGE TO FUNCTION: " << message << std::endl;
+                                    message = (data.*func->second)(message) + DATA_END;
+                                }
+                                std::cout << "MESSAGE FROM FUNCTION: " << message << std::endl;
 
-                        if(prefix == LOGIN_PREFIX || prefix == LOGOUT_PREFIX || prefix == REGISTER_PREFIX || prefix == CLOSING_APP_PREFIX){
-                            message += MESSAGE_SEPARATOR + std::to_string(thData->descriptors[i].fd);
+                                if(prefix != CLOSING_APP_PREFIX){
+                                    while(thData->saveToBuff(buff, message) > 0){
+                                        if(write(thData->descriptors[i].fd, buff, BUFFER_SIZE) == -1){
+                                            data.logoutUser(thData->descriptors[i].fd);
+                                            thData->removeDescriptor(thData->descriptors[i].fd);
+                                            break;
+                                        }
+                                    } 
+                                }
+                                else if(prefix == CLOSING_APP_PREFIX) thData->removeDescriptor(thData->descriptors[i].fd);
+                            }
                         }
-
-                        std::map<std::string, function>::iterator func = functionMap.find(prefix);
-                        if(func == functionMap.end()){
-                            std::cout << "Unknown message prefix: " << prefix << std::endl;
-                            memset(buff, 0, BUFFER_SIZE);
-                            message = FAILURE_CODE + std::string(MESSAGE_SEPARATOR) + "Server error occured.";
-                            sprintf(buff, "%s", message.c_str());
-                        }
-                        else{
-                            message = message.substr(prefix.size() + 1);
-                            std::cout << "MESSAGE TO FUNCTION: " << message << std::endl;
-                            message = (data.*func->second)(message);
-                            std::cout << "MESSAGE FROM FUNCTION: " << message << std::endl;
-                            memset(buff, 0, BUFFER_SIZE);
-                            sprintf(buff, "%s", message.c_str());
-                        }
-                        if(prefix != CLOSING_APP_PREFIX) write(thData->descriptors[i].fd, buff, BUFFER_SIZE);
-                        else if(prefix == CLOSING_APP_PREFIX) thData->removeDescriptor(thData->descriptors[i].fd);
                     }
                 }
-                // data.displayCalendars();
-                // data.displayUsers();
             }
-
-            if(thData->descriptorsNum == 0){
-                break;
-            }
+            std::cout << thData << std::endl;
         }
         std::cout << "Disconnected thread..." << std::endl;
         std::cout << "Deleting thread data..." << std::endl;
 
-        std::vector<ThreadData*>::iterator thDataPos = std::find(threadData.begin(), threadData.end(), thData);
-        threadData.erase(thDataPos);
+        std::vector<ThreadData*>::iterator thDataPos = std::find_if(threadData.begin(), 
+                                                                    threadData.end(), 
+                                                                    [thData](ThreadData* p){return *p == *thData;});
+
+        //std::vector<ThreadData*>::iterator thDataPos = std::find(threadData.begin(), threadData.end(), thData);
+        if(thDataPos == threadData.end()) std::cout << "Thread Data not found in vector!!!!!!" << std::endl;    
+        else threadData.erase(thDataPos);
         delete thData;
 
         std::cout << "Thread disconnected" << std::endl;
@@ -169,15 +174,26 @@ public:
 
     void handleConnection(int clientFd){
         int threadIndex = this->threadWithFreeSlots();
+        char response[BUFFER_SIZE];
+        memset(response, 0, BUFFER_SIZE);
         if(threadIndex == -1){
-            ThreadData* thData = new ThreadData(clientFd);
-            threadData.push_back(thData);
-            threads.push_back(std::thread(&Server::threadFunction, this, thData));
-            std::cout << "New thread created" << std::endl;
+            if((int)threads.size() * MAX_DESCRIPTORS_NUM < MAX_CONNECTED_CLIENTS){
+                ThreadData* thData = new ThreadData(clientFd);
+                threadData.push_back(thData);
+                threads.push_back(std::thread(&Server::threadFunction, this, thData));
+
+                std::cout << "New thread created" << std::endl;
+                sprintf(response, "%s%c", SUCCESS_CODE, DATA_END);
+            } else {
+                sprintf(response, "%s%c", FAILURE_CODE, DATA_END);
+            }
+            
         } else{
             threadData[threadIndex]->newDescriptor(clientFd);
             std::cout << "New client added to thread" << std::endl;
+            sprintf(response, "%s%c", SUCCESS_CODE, DATA_END);
         }
+        //write(clientFd, response, BUFFER_SIZE);
     }
 
     void loop(){

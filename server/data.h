@@ -1,5 +1,3 @@
-#include <vector>
-#include <iostream>
 #include "models/calendar.h"
 #include "models/user.h"
 
@@ -53,10 +51,10 @@ public:
     // USER FUNCTIONS
     std::string loginUser(std::string data){
         std::cout << "\nloginUser function" << std::endl;
-        size_t sepIndex1 = data.find(MESSAGE_SEPARATOR);
-        size_t sepIndex2 = data.find_last_of(MESSAGE_SEPARATOR);
+        size_t sepIndex1 = data.find(DATA_SEPARATOR);
+        size_t sepIndex2 = data.find_last_of(DATA_SEPARATOR);
         if(sepIndex1 == std::string::npos || sepIndex2 == std::string::npos){
-            return FAILURE_CODE + std::string(MESSAGE_SEPARATOR) + "Server error";
+            return FAILURE_CODE + std::string(DATA_SEPARATOR) + "Server error";
         }
 
         std::string username = data.substr(0, sepIndex1);
@@ -66,23 +64,23 @@ public:
         int usrIndex = userIndex(username);
 
         if(usrIndex == -1){
-            return FAILURE_CODE + std::string(MESSAGE_SEPARATOR) + "User not exists";
+            return FAILURE_CODE + std::string(DATA_SEPARATOR) + "User not exists";
         } else if (users[usrIndex].password == password){
             if(users[usrIndex].logIn(fd) == SUCCESS){
                 return SUCCESS_CODE;
             } else{
-                return FAILURE_CODE + std::string(MESSAGE_SEPARATOR) + "User is currently logged in";
+                return FAILURE_CODE + std::string(DATA_SEPARATOR) + "User is currently logged in";
             }
         }
-        return FAILURE_CODE + std::string(MESSAGE_SEPARATOR) + "Wrong password";
+        return FAILURE_CODE + std::string(DATA_SEPARATOR) + "Wrong password";
     }
 
     std::string registerUser(std::string data){
         std::cout << "\nregisterUser function" << std::endl;
-        size_t sepIndex1 = data.find(MESSAGE_SEPARATOR);
-        size_t sepIndex2 = data.find_last_of(MESSAGE_SEPARATOR);
+        size_t sepIndex1 = data.find(DATA_SEPARATOR);
+        size_t sepIndex2 = data.find_last_of(DATA_SEPARATOR);
         if(sepIndex1 == std::string::npos || sepIndex2 == std::string::npos){
-            return FAILURE_CODE + std::string(MESSAGE_SEPARATOR) + "Server error";
+            return FAILURE_CODE + std::string(DATA_SEPARATOR) + "Server error";
         }
 
         std::string username = data.substr(0, sepIndex1);
@@ -95,18 +93,29 @@ public:
             insertUser(User(username, password, fd));
             return SUCCESS_CODE;
         }
-        return FAILURE_CODE + std::string(MESSAGE_SEPARATOR) + "Such nick currently exits";
+        return FAILURE_CODE + std::string(DATA_SEPARATOR) + "Such nick currently exits";
+    }
+
+    result logoutUser(int fd){
+        std::cout << "\nlogoutUser function" << std::endl;
+
+        for(int i = 0; i < usersNum; i++){
+            if(users[i].userFd == fd){
+                return users[i].logOut();
+            }
+        }
+        return FAILURE;
     }
 
     std::string logoutUser(std::string data){
         std::cout << "\nlogoutUser function" << std::endl;
-        if(data.substr(0, 1) == MESSAGE_SEPARATOR){
+        if(data.substr(0, 1) == DATA_SEPARATOR){
             return SUCCESS_CODE;
         }
 
-        size_t sepIndex1 = data.find(MESSAGE_SEPARATOR);
+        size_t sepIndex1 = data.find(DATA_SEPARATOR);
         if(sepIndex1 == std::string::npos){
-            return FAILURE_CODE + std::string(MESSAGE_SEPARATOR) + "Server error";
+            return FAILURE_CODE + std::string(DATA_SEPARATOR) + "Server error";
         }
 
         std::string username = data.substr(0, sepIndex1);
@@ -115,13 +124,13 @@ public:
 
         int usrIndex = userIndex(username);
         if(usrIndex == -1){
-            return FAILURE_CODE + std::string(MESSAGE_SEPARATOR) + "User is not exists";
+            return FAILURE_CODE + std::string(DATA_SEPARATOR) + "User is not exists";
         }
         if(users[usrIndex].userFd != fd){
-            return FAILURE_CODE + std::string(MESSAGE_SEPARATOR) + "Wrong descriptor number";
+            return FAILURE_CODE + std::string(DATA_SEPARATOR) + "Wrong descriptor number";
         }
         if(users[usrIndex].logOut() == FAILURE){
-            return FAILURE_CODE + std::string(MESSAGE_SEPARATOR) + "User is currently logged out";
+            return FAILURE_CODE + std::string(DATA_SEPARATOR) + "User is currently logged out";
         }
         return SUCCESS_CODE;
     }
@@ -129,10 +138,10 @@ public:
     // CALENDAR FUNCTIONS
     std::string insertCalendar(std::string data){
         std::cout << "\ninsertCalendar function" << std::endl;
-        size_t sepIndex1 = data.find(MESSAGE_SEPARATOR);
-        size_t sepIndex2 = data.find(MESSAGE_SEPARATOR, sepIndex1 + 1);
+        size_t sepIndex1 = data.find(DATA_SEPARATOR);
+        size_t sepIndex2 = data.find(DATA_SEPARATOR, sepIndex1 + 1);
         if(sepIndex1 == std::string::npos){
-            return FAILURE_CODE + std::string(MESSAGE_SEPARATOR) + "Server error";
+            return FAILURE_CODE + std::string(DATA_SEPARATOR) + "Server error";
         }
 
         std::string calendarName  = data.substr(0, sepIndex1);
@@ -146,12 +155,12 @@ public:
 
         std::vector<Calendar>::iterator calendarPos = std::find(calendars.begin(), calendars.end(), calendarName);
         if(calendarPos != calendars.end()){
-            return FAILURE_CODE + std::string(MESSAGE_SEPARATOR) + "Such calendar name exists";
+            return FAILURE_CODE + std::string(DATA_SEPARATOR) + "Such calendar name exists";
         }
 
         int usrIndex = userIndex(calendarOwner);
         if(usrIndex == -1){
-            return FAILURE_CODE + std::string(MESSAGE_SEPARATOR) + "User not exists";
+            return FAILURE_CODE + std::string(DATA_SEPARATOR) + "User not exists";
         }
         calendars.push_back(Calendar(calendarName, &(users[usrIndex].username)));
 
@@ -160,7 +169,7 @@ public:
             std::string username;
             std::string notFoundUsers = "";
 
-            sepIndex1 = data.find(MESSAGE_SEPARATOR);
+            sepIndex1 = data.find(DATA_SEPARATOR);
             while(sepIndex1 != std::string::npos){
                 username = data.substr(0, sepIndex1);
                 usrIndex = userIndex(username);
@@ -170,7 +179,7 @@ public:
                     (*calendarPos).userList.push_back(&(users[usrIndex].username));
                 }
                 data = data.substr(sepIndex1 + 1);
-                sepIndex1 = data.find(MESSAGE_SEPARATOR);
+                sepIndex1 = data.find(DATA_SEPARATOR);
             }
             usrIndex = userIndex(data);
             if(usrIndex == -1){
@@ -179,17 +188,17 @@ public:
                 (*calendarPos).userList.push_back(&(users[usrIndex].username));
             }
             if(notFoundUsers.empty()) return SUCCESS_CODE;
-            return FAILURE_CODE + std::string(MESSAGE_SEPARATOR) + "Failed to add users: " + notFoundUsers.substr(0, notFoundUsers.size() - 2);
+            return FAILURE_CODE + std::string(DATA_SEPARATOR) + "Failed to add users: " + notFoundUsers.substr(0, notFoundUsers.size() - 2);
         }
         return SUCCESS_CODE;
     }
 
     std::string modifyCalendarName(std::string data){
         std::cout << "\nmodifyCalendarName function" << std::endl;
-        size_t sepIndex1 = data.find(MESSAGE_SEPARATOR);
-        size_t sepIndex2 = data.find(MESSAGE_SEPARATOR, sepIndex1 + 1);
+        size_t sepIndex1 = data.find(DATA_SEPARATOR);
+        size_t sepIndex2 = data.find(DATA_SEPARATOR, sepIndex1 + 1);
         if(sepIndex1 == std::string::npos || sepIndex2 == std::string::npos){
-            return FAILURE_CODE + std::string(MESSAGE_SEPARATOR) + "Server error";
+            return FAILURE_CODE + std::string(DATA_SEPARATOR) + "Server error";
         }
 
         std::string oldCalendarName = data.substr(0, sepIndex1);
@@ -199,10 +208,10 @@ public:
         //std::cout << "Separated data: " << oldCalendarName << " " << newCalendarName << " " << username << std::endl;
         std::vector<Calendar>::iterator calendarPos = std::find(calendars.begin(), calendars.end(), oldCalendarName);
         if(calendarPos == calendars.end()){
-            return FAILURE_CODE + std::string(MESSAGE_SEPARATOR) + "Calendar not exists";
+            return FAILURE_CODE + std::string(DATA_SEPARATOR) + "Calendar not exists";
         }
         if(*(calendarPos->owner) != username){
-            return FAILURE_CODE + std::string(MESSAGE_SEPARATOR) + "You don't have permission to perform this operation";
+            return FAILURE_CODE + std::string(DATA_SEPARATOR) + "You don't have permission to perform this operation";
         }
         calendarPos->changeName(newCalendarName);
         return SUCCESS_CODE;
@@ -210,10 +219,10 @@ public:
 
     std::string deleteCalendarUser(std::string data){
         std::cout << "\ndeleteCalendarUser function" << std::endl;
-        size_t sepIndex1 = data.find(MESSAGE_SEPARATOR);
-        size_t sepIndex2 = data.find(MESSAGE_SEPARATOR, sepIndex1 + 1);
+        size_t sepIndex1 = data.find(DATA_SEPARATOR);
+        size_t sepIndex2 = data.find(DATA_SEPARATOR, sepIndex1 + 1);
         if(sepIndex1 == std::string::npos || sepIndex2 == std::string::npos){
-            return FAILURE_CODE + std::string(MESSAGE_SEPARATOR) + "Server error";
+            return FAILURE_CODE + std::string(DATA_SEPARATOR) + "Server error";
         }
 
         std::string calendarName  = data.substr(0, sepIndex1);
@@ -223,10 +232,10 @@ public:
         //std::cout << "Separated data: " << calendarName << " " << userToDelete << " " << calendarOwner << std::endl;
         std::vector<Calendar>::iterator calendarPos = std::find(calendars.begin(), calendars.end(), calendarName);
         if(calendarPos == calendars.end()){
-            return FAILURE_CODE + std::string(MESSAGE_SEPARATOR) + "Calendar not exists";
+            return FAILURE_CODE + std::string(DATA_SEPARATOR) + "Calendar not exists";
         }
         if(*(calendarPos->owner) != calendarOwner){
-            return FAILURE_CODE + std::string(MESSAGE_SEPARATOR) + "Operation not permitted";
+            return FAILURE_CODE + std::string(DATA_SEPARATOR) + "Operation not permitted";
         }
         for(size_t i = 0; i < calendarPos->userList.size(); i++){
             if(*(calendarPos->userList[i]) == userToDelete){
@@ -234,37 +243,39 @@ public:
                 return SUCCESS_CODE;
             }
         }
-        return FAILURE_CODE + std::string(MESSAGE_SEPARATOR) + "Failed to delete user";
+        return FAILURE_CODE + std::string(DATA_SEPARATOR) + "Failed to delete user";
     }
 
     std::string insertCalendarUser(std::string data){
         std::cout << "\ninsertCalendarUser function" << std::endl;
-        size_t sepIndex1 = data.find(MESSAGE_SEPARATOR);
-        size_t sepIndex2 = data.find(MESSAGE_SEPARATOR, sepIndex1 + 1);
+        size_t sepIndex1 = data.find(DATA_SEPARATOR);
+        size_t sepIndex2 = data.find(DATA_SEPARATOR, sepIndex1 + 1);
         if(sepIndex1 == std::string::npos || sepIndex2 == std::string::npos){
-            return FAILURE_CODE + std::string(MESSAGE_SEPARATOR) + "Server error";
+            return FAILURE_CODE + std::string(DATA_SEPARATOR) + "Server error";
         }
 
         std::string calendarName  = data.substr(0, sepIndex1);
-        std::string userToInsert  = data.substr(sepIndex1 + 1, sepIndex2 - sepIndex1 + 1);
+        std::string userToInsert  = data.substr(sepIndex1 + 1, sepIndex2 - sepIndex1 - 1);
         std::string calendarOwner = data.substr(sepIndex2 + 1);
+
+        std::cout << "Separated data: " << calendarName << " " << userToInsert << " " << calendarOwner << std::endl;
 
         std::vector<Calendar>::iterator calendarPos = std::find(calendars.begin(), calendars.end(), calendarName);
         if(calendarPos == calendars.end()){
-            return FAILURE_CODE + std::string(MESSAGE_SEPARATOR) + "Calendar not exists";
+            return FAILURE_CODE + std::string(DATA_SEPARATOR) + "Calendar not exists";
         }
         if(*(calendarPos->owner) != calendarOwner){
-            return FAILURE_CODE + std::string(MESSAGE_SEPARATOR) + "Operation not permitted";
+            return FAILURE_CODE + std::string(DATA_SEPARATOR) + "Operation not permitted";
         }
 
         int usrIndex = userIndex(userToInsert);
         if(usrIndex == -1){
-            return FAILURE_CODE + std::string(MESSAGE_SEPARATOR) + "User not exists";
+            return FAILURE_CODE + std::string(DATA_SEPARATOR) + "User not exists";
         }
 
         std::vector<std::string*>::iterator userPosCal = std::find(calendarPos->userList.begin(), calendarPos->userList.end(), &(users[usrIndex].username));
         if(userPosCal != calendarPos->userList.end()){
-            return FAILURE_CODE + std::string(MESSAGE_SEPARATOR) + "User has access to calendar";
+            return FAILURE_CODE + std::string(DATA_SEPARATOR) + "User has access to calendar";
         }
         calendarPos->userList.push_back(&(users[usrIndex].username));
         return SUCCESS_CODE;
@@ -272,9 +283,9 @@ public:
 
     std::string deleteCalendar(std::string data){
         std::cout << "\ndeleteCalendar function" << std::endl;
-        size_t sepIndex1 = data.find(MESSAGE_SEPARATOR);
+        size_t sepIndex1 = data.find(DATA_SEPARATOR);
         if(sepIndex1 == std::string::npos){
-            return FAILURE_CODE + std::string(MESSAGE_SEPARATOR) + "Server error";
+            return FAILURE_CODE + std::string(DATA_SEPARATOR) + "Server error";
         }
 
         std::string calendarName   = data.substr(0, sepIndex1);
@@ -283,10 +294,10 @@ public:
         //std::cout << "Separated data: " << calendarName << " " << calendarOwner << std::endl;
         std::vector<Calendar>::iterator calendarPos = std::find(calendars.begin(), calendars.end(), calendarName);
         if(calendarPos == calendars.end()){
-            return FAILURE_CODE + std::string(MESSAGE_SEPARATOR) + "Calendar not exists";
+            return FAILURE_CODE + std::string(DATA_SEPARATOR) + "Calendar not exists";
         }
         if(*(calendarPos->owner) != calendarOwner){
-            return FAILURE_CODE + std::string(MESSAGE_SEPARATOR) + "Operation not permitted";
+            return FAILURE_CODE + std::string(DATA_SEPARATOR) + "Operation not permitted";
         }
         calendars.erase(calendarPos);
         return SUCCESS_CODE;
@@ -304,7 +315,7 @@ public:
         //this->displayCalendarsAddresses();
         int usrIndex = userIndex(data);
         if(usrIndex == -1){
-            return FAILURE_CODE + std::string(MESSAGE_SEPARATOR) + "User not exists";
+            return FAILURE_CODE + std::string(DATA_SEPARATOR) + "User not exists";
         }
 
         std::string response = SUCCESS_CODE;
@@ -333,7 +344,7 @@ public:
     std::string getCalendarUserList(std::string data){
         std::vector<Calendar>::iterator calendarPos = std::find(calendars.begin(), calendars.end(), data);
         if(calendarPos == calendars.end()){
-            return FAILURE_CODE + std::string(MESSAGE_SEPARATOR) + "Calendar not found";
+            return FAILURE_CODE + std::string(DATA_SEPARATOR) + "Calendar not found";
         }
         return this->getCalendarUserList(calendarPos);
     }
@@ -341,7 +352,7 @@ public:
     std::string getCalendarInfo(std::string data){
         std::vector<Calendar>::iterator calendarPos = std::find(calendars.begin(), calendars.end(), data);
         if(calendarPos == calendars.end()){
-            return FAILURE_CODE + std::string(MESSAGE_SEPARATOR) + "Calendar not found";
+            return FAILURE_CODE + std::string(DATA_SEPARATOR) + "Calendar not found";
         }
 
         std::string userList = this->getCalendarUserList(calendarPos);
@@ -358,17 +369,17 @@ public:
     // EVENT FUNCTIONS
     std::string insertEvent(std::string data){
         size_t sepIndex[4];
-        sepIndex[0] = data.find(MESSAGE_SEPARATOR);
-        if(sepIndex[0] == std::string::npos) return FAILURE_CODE + std::string(MESSAGE_SEPARATOR) + "Server error";
+        sepIndex[0] = data.find(DATA_SEPARATOR);
+        if(sepIndex[0] == std::string::npos) return FAILURE_CODE + std::string(DATA_SEPARATOR) + "Server error";
         for(size_t i = 1; i < 4; i++){
-            sepIndex[i] = data.find(MESSAGE_SEPARATOR, sepIndex[i - 1] + 1);
-            if(sepIndex[i] == std::string::npos) return FAILURE_CODE + std::string(MESSAGE_SEPARATOR) + "Server error";
+            sepIndex[i] = data.find(DATA_SEPARATOR, sepIndex[i - 1] + 1);
+            if(sepIndex[i] == std::string::npos) return FAILURE_CODE + std::string(DATA_SEPARATOR) + "Server error";
         }
 
         std::string calendarName = data.substr(0, sepIndex[0]);
         std::vector<Calendar>::iterator calendarPos = std::find(calendars.begin(), calendars.end(), calendarName);
         if(calendarPos == calendars.end()){
-            return FAILURE_CODE + std::string(MESSAGE_SEPARATOR) + "Calendar not exists";
+            return FAILURE_CODE + std::string(DATA_SEPARATOR) + "Calendar not exists";
         }
 
         std::string username   = data.substr(sepIndex[0] + 1, sepIndex[1] - sepIndex[0] - 1);
@@ -381,11 +392,11 @@ public:
         Event event = Event(eventName, eventDate, eventHour, &username);
         std::vector<Event>::iterator eventPos = std::find(calendarPos->events.begin(), calendarPos->events.end(), event);
         if(eventPos != calendarPos->events.end()){
-            return FAILURE_CODE + std::string(MESSAGE_SEPARATOR) + "Event exists";
+            return FAILURE_CODE + std::string(DATA_SEPARATOR) + "Event exists";
         }
         int usrIndex = userIndex(username);
         if(usrIndex == -1){
-            return FAILURE_CODE + std::string(MESSAGE_SEPARATOR) + "User doesn't exists";
+            return FAILURE_CODE + std::string(DATA_SEPARATOR) + "User doesn't exists";
         }
 
         calendarPos->events.push_back(Event(eventName, eventDate, eventHour, &(users[usrIndex].username)));
@@ -394,32 +405,37 @@ public:
 
     std::string modifyEvent(std::string data){
         size_t sepIndex[8];
-        sepIndex[0] = data.find(MESSAGE_SEPARATOR);
-        if(sepIndex[0] == std::string::npos) return FAILURE_CODE + std::string(MESSAGE_SEPARATOR) + "Server error";
+        sepIndex[0] = data.find(DATA_SEPARATOR);
+        if(sepIndex[0] == std::string::npos) return FAILURE_CODE + std::string(DATA_SEPARATOR) + "Server error";
         for(size_t i = 1; i < 8; i++){
-            sepIndex[i] = data.find(MESSAGE_SEPARATOR, sepIndex[i - 1] + 1);
-            if(sepIndex[i] == std::string::npos) return FAILURE_CODE + std::string(MESSAGE_SEPARATOR) + "Server error";
+            sepIndex[i] = data.find(DATA_SEPARATOR, sepIndex[i - 1] + 1);
+            if(sepIndex[i] == std::string::npos) return FAILURE_CODE + std::string(DATA_SEPARATOR) + "Server error";
         }
 
         std::string calendarName = data.substr(0, sepIndex[0]);
         std::vector<Calendar>::iterator calendarPos = std::find(calendars.begin(), calendars.end(), calendarName);
         if(calendarPos == calendars.end()){
-            return FAILURE_CODE + std::string(MESSAGE_SEPARATOR) + "Calendar not exists";
+            return FAILURE_CODE + std::string(DATA_SEPARATOR) + "Calendar not exists";
         }
 
         std::string username   = data.substr(sepIndex[0] + 1, sepIndex[1] - sepIndex[0] - 1);
+
+        std::cout << calendarName << " " << username << std::endl;
+
         std::string eventName  = data.substr(sepIndex[1] + 1, sepIndex[2] - sepIndex[1] - 1);
         std::string eventDate  = data.substr(sepIndex[2] + 1, sepIndex[3] - sepIndex[2] - 1);
         std::string eventHour  = data.substr(sepIndex[3] + 1, sepIndex[4] - sepIndex[3] - 1);
         std::string eventOwner = data.substr(sepIndex[4] + 1, sepIndex[5] - sepIndex[4] - 1);
 
+        std::cout << eventName << " " << eventDate << " " << eventHour << " " << eventOwner << std::endl;
+
         Event event = Event(eventName, eventDate, eventHour, &eventOwner);
         std::vector<Event>::iterator eventPos = std::find(calendarPos->events.begin(), calendarPos->events.end(), event);
         if(eventPos == calendarPos->events.end()){
-            return FAILURE_CODE + std::string(MESSAGE_SEPARATOR) + "Event not exists";
+            return FAILURE_CODE + std::string(DATA_SEPARATOR) + "Event not exists";
         }
         if(*(eventPos->owner) != *(calendarPos->owner) && *(eventPos->owner) != eventOwner){
-            return FAILURE_CODE + std::string(MESSAGE_SEPARATOR) + "Operation not permitted";
+            return FAILURE_CODE + std::string(DATA_SEPARATOR) + "Operation not permitted";
         }
         eventName = data.substr(sepIndex[5] + 1, sepIndex[6] - sepIndex[5] - 1);
         eventDate = data.substr(sepIndex[6] + 1, sepIndex[7] - sepIndex[6] - 1);
@@ -434,41 +450,46 @@ public:
 
     std::string deleteEvent(std::string data){
         size_t sepIndex[5];
-        sepIndex[0] = data.find(MESSAGE_SEPARATOR);
-        if(sepIndex[0] == std::string::npos) return FAILURE_CODE + std::string(MESSAGE_SEPARATOR) + "Server error";
+        sepIndex[0] = data.find(DATA_SEPARATOR);
+        if(sepIndex[0] == std::string::npos) return FAILURE_CODE + std::string(DATA_SEPARATOR) + "Server error";
         for(size_t i = 1; i < 5; i++){
-            sepIndex[i] = data.find(MESSAGE_SEPARATOR, sepIndex[i - 1] + 1);
-            if(sepIndex[i] == std::string::npos) return FAILURE_CODE + std::string(MESSAGE_SEPARATOR) + "Server error";
+            sepIndex[i] = data.find(DATA_SEPARATOR, sepIndex[i - 1] + 1);
+            if(sepIndex[i] == std::string::npos) return FAILURE_CODE + std::string(DATA_SEPARATOR) + "Server error";
         }
 
         std::string calendarName = data.substr(0, sepIndex[0]);
         std::vector<Calendar>::iterator calendarPos = std::find(calendars.begin(), calendars.end(), calendarName);
         if(calendarPos == calendars.end()){
-            return FAILURE_CODE + std::string(MESSAGE_SEPARATOR) + "Calendar not exists";
+            return FAILURE_CODE + std::string(DATA_SEPARATOR) + "Calendar not exists";
         }
 
         std::string username   = data.substr(sepIndex[0] + 1, sepIndex[1] - sepIndex[0] - 1);
+
+        std::cout << calendarName << " " << username << std::endl;
+
         std::string eventName  = data.substr(sepIndex[1] + 1, sepIndex[2] - sepIndex[1] - 1);
         std::string eventDate  = data.substr(sepIndex[2] + 1, sepIndex[3] - sepIndex[2] - 1);
         std::string eventHour  = data.substr(sepIndex[3] + 1, sepIndex[4] - sepIndex[3] - 1);
         std::string eventOwner = data.substr(sepIndex[4] + 1);
 
+        std::cout << eventName << " " << eventDate << " " << eventHour << " " << eventOwner << std::endl;
+
         Event event = Event(eventName, eventDate, eventHour, &eventOwner);
         std::vector<Event>::iterator eventPos = std::find(calendarPos->events.begin(), calendarPos->events.end(), event);
         if(eventPos == calendarPos->events.end()){
-            return FAILURE_CODE + std::string(MESSAGE_SEPARATOR) + "Event not exists";
+            return FAILURE_CODE + std::string(DATA_SEPARATOR) + "Event not exists";
         }
         if(*(eventPos->owner) != *(calendarPos->owner) && *(eventPos->owner) != eventOwner){
-            return FAILURE_CODE + std::string(MESSAGE_SEPARATOR) + "Operation not permitted";
+            return FAILURE_CODE + std::string(DATA_SEPARATOR) + "Operation not permitted";
         }
         calendarPos->events.erase(eventPos);
         return SUCCESS_CODE;
     }
 
     std::string getEventsForDay(std::string data){
-        size_t sepIndex1 = data.find(MESSAGE_SEPARATOR);
+        size_t sepIndex1 = data.find(DATA_SEPARATOR);
         if(sepIndex1 == std::string::npos){
-            return FAILURE_CODE + std::string(MESSAGE_SEPARATOR) + "Server error";
+            return FAILURE_CODE + std::string(DATA_SEPARATOR) + "Server error";
         }
 
         std::string calendarName  = data.substr(0, sepIndex1);
@@ -476,8 +497,10 @@ public:
 
         std::vector<Calendar>::iterator calendarPos = std::find(calendars.begin(), calendars.end(), calendarName);
         if(calendarPos == calendars.end()){
-            return FAILURE_CODE + std::string(MESSAGE_SEPARATOR) + "Calendar not exists";
+            return FAILURE_CODE + std::string(DATA_SEPARATOR) + "Calendar not exists";
         }
+
+        std::cout << "Separated data: " << calendarName << " " << date << std::endl;
 
         std::string response = SUCCESS_CODE;
         for(size_t i = 0; i < calendarPos->events.size(); i++){

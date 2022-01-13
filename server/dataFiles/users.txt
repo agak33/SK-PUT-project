@@ -1,6 +1,0 @@
-admin
-admin
-testUser1
-abc
-test_user2
-poi
