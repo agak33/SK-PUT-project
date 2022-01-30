@@ -6,9 +6,11 @@
 #include <thread>
 #include <csignal>
 #include <algorithm>
+#include <future>
 
 #include "data.h"
 #include "threadData.h"
+#include "runningThread.h"
 
 #pragma once
 
@@ -23,6 +25,7 @@ public:
     Data data;
 
     std::vector<std::thread> threads;
+    std::vector<RunningThread> runningThreads;
     std::vector<ThreadData*> threadData;
 
     typedef std::string (Data::*function)(std::string);
@@ -33,7 +36,7 @@ public:
     sockaddr_in server_addr = {0};
 
     Server( const int& app_port, const std::string& app_host, 
-            const int& queue_size = 5, const int& max_connected_clients = 3){
+            const int& queue_size = 5, const int& max_connected_clients = 1){
 
         this->APPLICATION_PORT      = app_port;
         this->APPLICATION_HOST      = app_host;
@@ -126,9 +129,10 @@ public:
                                     message = FAILURE_CODE + std::string(DATA_SEPARATOR) + "Server error occured." + DATA_END;
                                 }
                                 else{
-                                    std::cout << "MESSAGE TO FUNCTION: " << message << std::endl;
+                                    std::cout << "MESSAGE TO FUNCTION: " << message << " " << message.size() << std::endl;
                                     message = (data.*func->second)(message) + DATA_END;
                                 }
+                                message = prefix + DATA_SEPARATOR + message;
                                 std::cout << "MESSAGE FROM FUNCTION: " << message << std::endl;
 
                                 if(prefix != CLOSING_APP_PREFIX){
@@ -156,14 +160,45 @@ public:
                                                                     [thData](ThreadData* p){return *p == *thData;});
 
         //std::vector<ThreadData*>::iterator thDataPos = std::find(threadData.begin(), threadData.end(), thData);
-        if(thDataPos == threadData.end()) std::cout << "Thread Data not found in vector!!!!!!" << std::endl;    
-        else threadData.erase(thDataPos);
-        delete thData;
 
+        std::cout << "Looked for id: " << thData->threadId << std::endl;
+        for(size_t i = 0; i < runningThreads.size(); i++){
+            std::cout << runningThreads[i].threadId << std::endl;
+            if(runningThreads[i].threadId == thData->threadId){
+                runningThreads[i].running = false;
+                std::cout << "Thread found" << std::endl;
+                break;
+            }   
+        }
+        
+        if(thDataPos == threadData.end()) std::cout << "Thread Data not found in vector!!!!!!" << std::endl;    
+        else threadData.erase(thDataPos);        
+
+        delete thData;
         std::cout << "Thread disconnected" << std::endl;
     }
 
     int threadWithFreeSlots(){
+        // remove finished threads
+        while(1){
+            std::vector<RunningThread>::iterator threadFinished = std::find(
+                runningThreads.begin(), runningThreads.end(), false
+                );
+
+            if(threadFinished == runningThreads.end()){
+                break;
+            }
+            size_t threadIndex = 0;
+            while(threadIndex < threads.size() && threads[threadIndex].get_id() != threadFinished->threadId){
+                ++threadIndex;
+            }
+            threads[threadIndex].join();
+            threads.erase(threads.begin() + threadIndex);
+            runningThreads.erase(threadFinished);
+
+            std::cout << "Thread deleted" << std::endl;
+        }
+
         for(size_t i = 0; i < threadData.size(); i++){
             if(threadData[i]->freeSlots()){
                 return i;
@@ -174,26 +209,26 @@ public:
 
     void handleConnection(int clientFd){
         int threadIndex = this->threadWithFreeSlots();
-        char response[BUFFER_SIZE];
-        memset(response, 0, BUFFER_SIZE);
         if(threadIndex == -1){
+            std::cout << ((int)threads.size() * MAX_DESCRIPTORS_NUM) << " " << MAX_CONNECTED_CLIENTS <<std::endl;
             if((int)threads.size() * MAX_DESCRIPTORS_NUM < MAX_CONNECTED_CLIENTS){
                 ThreadData* thData = new ThreadData(clientFd);
                 threadData.push_back(thData);
+
                 threads.push_back(std::thread(&Server::threadFunction, this, thData));
+                runningThreads.push_back(RunningThread(threads[threads.size() - 1].get_id()));
+                std::cout << "id in rt " << threads[threads.size() - 1].get_id() << std::endl;
+                thData->setThreadId(threads[threads.size() - 1].get_id());
+                std::cout << "id in thData " << threads[threads.size() - 1].get_id() << std::endl;
 
                 std::cout << "New thread created" << std::endl;
-                sprintf(response, "%s%c", SUCCESS_CODE, DATA_END);
             } else {
-                sprintf(response, "%s%c", FAILURE_CODE, DATA_END);
+                close(clientFd);
             }
-            
         } else{
             threadData[threadIndex]->newDescriptor(clientFd);
             std::cout << "New client added to thread" << std::endl;
-            sprintf(response, "%s%c", SUCCESS_CODE, DATA_END);
         }
-        //write(clientFd, response, BUFFER_SIZE);
     }
 
     void loop(){

@@ -5,6 +5,7 @@
 
 class ThreadData{
 public:
+    std::thread::id threadId;
     pollfd descriptors[MAX_DESCRIPTORS_NUM];
     std::string message[MAX_DESCRIPTORS_NUM];
     int descriptorsNum;
@@ -12,22 +13,26 @@ public:
     bool disconnect;
 
     ThreadData(){
-        this->descriptorsNum = 0;
-        this->timeout = 2500;
-        this->disconnect = false;
+        this->descriptorsNum    = 0;
+        this->timeout           = 2500;
+        this->disconnect        = false;
         for(int i = 0; i < MAX_DESCRIPTORS_NUM; i++){
             message[i] = "";
         }
     }
 
     ThreadData(int clientFd, int timeout = 2500){
-        this->descriptorsNum = 0;
-        this->timeout = timeout;
-        this->disconnect = false;
+        this->descriptorsNum    = 0;
+        this->timeout           = timeout;
+        this->disconnect        = false;
         this->newDescriptor(clientFd);
         for(int i = 0; i < MAX_DESCRIPTORS_NUM; i++){
             message[i] = "";
         }
+    }
+
+    void setThreadId(std::thread::id threadId){
+        this->threadId = threadId;
     }
 
     ~ThreadData(){
@@ -68,7 +73,7 @@ public:
     }
 
     std::string getMessage(int index){
-        std::string result = message[index];
+        std::string result = message[index].substr(0, message[index].size() - 1);
         message[index] = "";
         return result;
     }

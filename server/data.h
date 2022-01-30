@@ -64,7 +64,7 @@ public:
         int usrIndex = userIndex(username);
 
         if(usrIndex == -1){
-            return FAILURE_CODE + std::string(DATA_SEPARATOR) + "User not exists";
+            return FAILURE_CODE + std::string(DATA_SEPARATOR) + "User doesn't exists";
         } else if (users[usrIndex].password == password){
             if(users[usrIndex].logIn(fd) == SUCCESS){
                 return SUCCESS_CODE;
@@ -502,7 +502,7 @@ public:
 
         std::cout << "Separated data: " << calendarName << " " << date << std::endl;
 
-        std::string response = SUCCESS_CODE;
+        std::string response = SUCCESS_CODE + std::string(DATA_SEPARATOR) + date;
         for(size_t i = 0; i < calendarPos->events.size(); i++){
             if(calendarPos->events[i].date == date){
                 response += std::string(DATA_SEPARATOR) + calendarPos->events[i].name +

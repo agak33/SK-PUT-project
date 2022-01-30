@@ -1,10 +1,11 @@
 from typing import Union, List
 
 from PyQt5.QtCore import QTimer
+from PyQt5.QtWidgets import QMessageBox
 from setup import *
 import socket
 from calendar import Calendar
-from event import Event
+from dataModels.event import Event
 
 APPLICATION_PORT = 1234
 APPLICATION_HOST = 'localhost'
@@ -14,9 +15,10 @@ class ServerRequests():
         super().__init__()
         self.socket:           socket   = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.connectionStatus: bool     = False
-
+        
         self.timer:            QTimer   = QTimer()
 
+        self.messageToClient:   QMessageBox = QMessageBox()
         self.connect()
 
     def connect(self) -> Union[None, str]:
@@ -27,12 +29,11 @@ class ServerRequests():
             print('Connected to serwer')
         except ConnectionRefusedError:
             self.connectionStatus = False
+            self.messageToClient.about(self.messageToClient, 'ERROR OCCURED', 'Unable to connect to server')
             print('Unable to connect to server')
 
-    def timeout(self) -> str:
-        return TIMEOUT_VALUE
-
     def sendAndReceiveData(self, message: str) -> str:
+        message += DATA_END
         if self.connectionStatus:
             print(f'Send to server: {message}')
             self.socket.sendall(message.encode())
@@ -46,6 +47,7 @@ class ServerRequests():
         return ERROR_VALUE + DATA_SEPARATOR + 'Cannot connect to the server'
 
     def sendLoginData(self, login: str, passwd: str) -> Union[None, str]:
+        return None
         response = self.sendAndReceiveData(DATA_SEPARATOR.join([LOGIN_PREFIX, login, passwd]))
         print(f'Got response from server: {response}')
         if response[0] == ERROR_VALUE:

@@ -1,23 +1,26 @@
-import sys
+
 from app import App
+import sys
 import sys
 import signal
 
 def sigpipe_handler():
     print('sigpipe occured')
 
-APPLICATION_PORT = 1234
-APPLICATION_HOST = 'localhost'
-
-
 if __name__ == '__main__':
     if len(sys.argv) < 3:
-        print(f'Too less arguments.')
-        print(f'To run application:\npython3 main.py APPLICATION_PORT APPLICATION_HOST')
+        print(f'Not enough arguments. To run application:\n'
+                'python3 main.py <application host> <application port>')
         exit(0)
 
-    # APPLICATION_PORT = sys.argv[1]
-    # APPLICATION_HOST = sys.argv[2]
+    APPLICATION_PORT = None
+    APPLICATION_HOST = None
+    try:
+        APPLICATION_HOST = sys.argv[1]
+        APPLICATION_PORT = int(sys.argv[2])
+    except ValueError:
+        print('Wrong datatype format. App port should be an integer.')
+        exit(0)
 
     app = App(APPLICATION_PORT, APPLICATION_HOST)
     signal.signal(signal.SIGPIPE, sigpipe_handler)
