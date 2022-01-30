@@ -5,6 +5,7 @@
 
 class ThreadData{
 public:
+    std::mutex modifyDescNumMutex;
     std::thread::id threadId;
     pollfd descriptors[MAX_DESCRIPTORS_NUM];
     std::string message[MAX_DESCRIPTORS_NUM];
@@ -61,11 +62,16 @@ public:
     }
 
     bool freeSlots(){
-        return this->descriptorsNum < MAX_DESCRIPTORS_NUM;
+        return this->descriptorsNum < MAX_DESCRIPTORS_NUM && this->descriptorsNum > 0;
     }
 
     bool readyToRead(int index){
-        return message[index].back() == DATA_END;
+        for(size_t i = 0; i < message[index].size(); i++){
+            if(message[index][i] == DATA_END){
+                return true;
+            }
+        }
+        return false;
     }
 
     void addBuffer(char* buffer, int index){
@@ -73,8 +79,8 @@ public:
     }
 
     std::string getMessage(int index){
-        std::string result = message[index].substr(0, message[index].size() - 1);
-        message[index] = "";
+        std::string result = message[index].substr(0, message[index].find(DATA_END));
+        message[index] = message[index].substr(message[index].find(DATA_END) + 1);
         return result;
     }
 
@@ -104,15 +110,19 @@ public:
     }
 
     result newDescriptor(int fd){
+        this->modifyDescNumMutex.lock();
         if(this->descriptorsNum == MAX_DESCRIPTORS_NUM){
+            this->modifyDescNumMutex.unlock();
             return FAILURE;
         }
         this->descriptors[descriptorsNum].fd = fd;
         this->descriptors[descriptorsNum++].events = POLLIN;
+        this->modifyDescNumMutex.unlock();
         return SUCCESS;
     }
 
     result removeDescriptor(int fd){
+        this->modifyDescNumMutex.lock();
         for(int i = 0; i < this->descriptorsNum; i++){
             if(this->descriptors[i].fd == fd){
                 close(descriptors[i].fd);
@@ -123,9 +133,11 @@ public:
                     message[j - 1] = message[j];
                 }
                 --this->descriptorsNum;
+                this->modifyDescNumMutex.unlock();
                 return SUCCESS;
             }
         }
+        this->modifyDescNumMutex.unlock();
         return FAILURE;
     }
 };

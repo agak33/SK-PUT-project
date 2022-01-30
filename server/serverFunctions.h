@@ -1,4 +1,5 @@
 #include <iostream>
+#include <mutex>
 #pragma once
 
 #define DATA_SEPARATOR ";"
@@ -28,7 +29,7 @@
 #define SUCCESS_CODE "0"
 #define FAILURE_CODE "1"
 
-#define MAX_DESCRIPTORS_NUM 1
+#define MAX_DESCRIPTORS_NUM 5
 //#define MAX_CONNECTED_CLIENTS 50
 #define MAX_CLIENT_NUMBER 100
 #define BUFFER_SIZE 100

@@ -24,6 +24,7 @@ public:
 
     Data data;
 
+    std::mutex threadMutex;
     std::vector<std::thread> threads;
     std::vector<RunningThread> runningThreads;
     std::vector<ThreadData*> threadData;
@@ -36,7 +37,7 @@ public:
     sockaddr_in server_addr = {0};
 
     Server( const int& app_port, const std::string& app_host, 
-            const int& queue_size = 5, const int& max_connected_clients = 1){
+            const int& queue_size = 5, const int& max_connected_clients = 50){
 
         this->APPLICATION_PORT      = app_port;
         this->APPLICATION_HOST      = app_host;
@@ -111,14 +112,13 @@ public:
             } else{
                 for(int i = 0; i < thData->descriptorsNum; i++){
                     if(thData->descriptors[i].revents & POLLIN){
-                        std::cout << "reading data from client..." << std::endl;
                         memset(buff, 0, BUFFER_SIZE);
                         if(read(thData->descriptors[i].fd, buff, BUFFER_SIZE) == 0){
                             data.logoutUser(thData->descriptors[i].fd);
                             thData->removeDescriptor(thData->descriptors[i].fd);
                         } else {
                             thData->addBuffer(buff, i);
-                            if(thData->readyToRead(i)){
+                            while(thData->readyToRead(i)){
                                 message = thData->getMessage(i);
                                 prefix  = thData->getPrefix(message);
                                 message = thData->getArguments(message, i);
@@ -129,6 +129,7 @@ public:
                                     message = FAILURE_CODE + std::string(DATA_SEPARATOR) + "Server error occured." + DATA_END;
                                 }
                                 else{
+                                    std::cout << "Prefix: " << prefix << std::endl;
                                     std::cout << "MESSAGE TO FUNCTION: " << message << " " << message.size() << std::endl;
                                     message = (data.*func->second)(message) + DATA_END;
                                 }
@@ -144,24 +145,26 @@ public:
                                         }
                                     } 
                                 }
-                                else if(prefix == CLOSING_APP_PREFIX) thData->removeDescriptor(thData->descriptors[i].fd);
+                                else if(prefix == CLOSING_APP_PREFIX) {
+                                    thData->removeDescriptor(thData->descriptors[i].fd);
+                                }
                             }
                         }
                     }
                 }
             }
-            std::cout << thData << std::endl;
         }
         std::cout << "Disconnected thread..." << std::endl;
         std::cout << "Deleting thread data..." << std::endl;
 
+        threadMutex.lock();
         std::vector<ThreadData*>::iterator thDataPos = std::find_if(threadData.begin(), 
                                                                     threadData.end(), 
                                                                     [thData](ThreadData* p){return *p == *thData;});
 
         //std::vector<ThreadData*>::iterator thDataPos = std::find(threadData.begin(), threadData.end(), thData);
 
-        std::cout << "Looked for id: " << thData->threadId << std::endl;
+        std::cout << "Looked for thrad id: " << thData->threadId << std::endl;
         for(size_t i = 0; i < runningThreads.size(); i++){
             std::cout << runningThreads[i].threadId << std::endl;
             if(runningThreads[i].threadId == thData->threadId){
@@ -175,6 +178,7 @@ public:
         else threadData.erase(thDataPos);        
 
         delete thData;
+        threadMutex.unlock();
         std::cout << "Thread disconnected" << std::endl;
     }
 
@@ -195,8 +199,7 @@ public:
             threads[threadIndex].join();
             threads.erase(threads.begin() + threadIndex);
             runningThreads.erase(threadFinished);
-
-            std::cout << "Thread deleted" << std::endl;
+            std::cout << "Unused thread has been deleted" << std::endl;
         }
 
         for(size_t i = 0; i < threadData.size(); i++){
@@ -210,24 +213,20 @@ public:
     void handleConnection(int clientFd){
         int threadIndex = this->threadWithFreeSlots();
         if(threadIndex == -1){
-            std::cout << ((int)threads.size() * MAX_DESCRIPTORS_NUM) << " " << MAX_CONNECTED_CLIENTS <<std::endl;
             if((int)threads.size() * MAX_DESCRIPTORS_NUM < MAX_CONNECTED_CLIENTS){
                 ThreadData* thData = new ThreadData(clientFd);
                 threadData.push_back(thData);
 
                 threads.push_back(std::thread(&Server::threadFunction, this, thData));
                 runningThreads.push_back(RunningThread(threads[threads.size() - 1].get_id()));
-                std::cout << "id in rt " << threads[threads.size() - 1].get_id() << std::endl;
                 thData->setThreadId(threads[threads.size() - 1].get_id());
-                std::cout << "id in thData " << threads[threads.size() - 1].get_id() << std::endl;
-
-                std::cout << "New thread created" << std::endl;
+                std::cout << "New thread has been created" << std::endl;
             } else {
                 close(clientFd);
             }
         } else{
             threadData[threadIndex]->newDescriptor(clientFd);
-            std::cout << "New client added to thread" << std::endl;
+            std::cout << "New client has been added to thread" << std::endl;
         }
     }
 
@@ -237,7 +236,9 @@ public:
             int clientFd = accept(this->serverSocket, NULL, NULL);
             valueCheck(clientFd, "Accept error", "New client connected");
 
+            threadMutex.lock();
             this->handleConnection(clientFd);
+            threadMutex.unlock();
         }
     }
 

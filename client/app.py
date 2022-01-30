@@ -44,14 +44,10 @@ class App(QObject):
         self.client.eventModify.connect(self.getEventsForDay)
         self.client.eventDelete.connect(self.getEventsForDay)
         
-        self.client.gotEventList.connect(self.displayUsers)
+        self.client.gotCalendarUserList.connect(self.displayUsers)
         
-        self.client.calendarUserDelete.connect(
-            lambda: self.client.writeData(CALENDAR_GET_USERS_PREFIX, self.screen.calendarNameLabel.text())
-        )
-        self.client.calendarUserInsert.connect(
-            lambda: self.client.writeData(CALENDAR_GET_USERS_PREFIX, self.screen.calendarNameLabel.text())
-        )
+        self.client.calendarUserDelete.connect(self.getCalendarUserList)
+        self.client.calendarUserInsert.connect(self.getCalendarUserList)
 
         self.user           = UserInfo()
         self.calendarList   = []
@@ -63,7 +59,7 @@ class App(QObject):
         self.loginWindow()
 
     def readData(self, message: str):
-        print('oto mess', message)
+        print(message)
 
     def loadScreen(self, path: str) -> None:
         self.screen = QtWidgets.QWidget()
@@ -132,7 +128,7 @@ class App(QObject):
     def newCalendarInserted(self):
         self.messageBox.about(
             self.messageBox, 'Success',
-            'New calendar has inserted successfully.'
+            'New calendar has been inserted successfully.'
         )
         if self.currentWidget == NEW_CALENDAR_WIDGET:
             self.screen.newCalendarNameField.setText('')
@@ -247,6 +243,10 @@ class App(QObject):
                                 self.screen.calendarNameLabel.text(), 
                                 self.screen.calendar.selectedDate().toString(DATE_FORMAT))
 
+    def getCalendarUserList(self):
+        if self.currentWidget == CALENDAR_WIDGET:
+            self.client.writeData(CALENDAR_GET_USERS_PREFIX, self.screen.calendarNameLabel.text())
+
     def calendarWindow(self, name: str, owner: str) -> None:
         self.currentWidget = CALENDAR_WIDGET
         self.loadScreen(f'{SCREEN_MODELS_FOLDER}/{SCREEN_CALENDAR_VIEW}')
@@ -273,7 +273,8 @@ class App(QObject):
         self.screen.newEventConfirmButton.clicked.connect(self.addEvent)
 
         # # calendar user list setup
-        #     self.client.writeData(CALENDAR_GET_USERS_PREFIX, name)
+        self.screen.userList.clear()
+        self.getCalendarUserList()
         if self.screen.calendarOwnerLabel.text() == self.user.username:
             self.screen.modifyUserListFrame.setEnabled(True)
             self.screen.deleteUserButton.setEnabled(False)
@@ -286,7 +287,8 @@ class App(QObject):
 
         # # tab 4
         if owner != self.user.username:
-            self.screen.calendarTabs.setTabVisible(3, False)
+            self.screen.calendarTabs.setTabEnabled(3, False)
+            self.screen.calendarTabs.setTabEnabled(1, False)
         self.screen.newCalendarNameButton.clicked.connect(self.newCalendarName)
 
         self.mainWindow.setCentralWidget(self.screen)
@@ -306,6 +308,8 @@ class App(QObject):
             self.screen.newEventDateTime.setDateTime(
                 QDateTime(QDate(date[2], date[1], date[0]), QTime(0, 0))
             )
+            self.mainWindow.setCentralWidget(self.screen)
+            self.mainWindow.show()
     
     def modifyEvent(self) -> None:
         currRowIndex = self.screen.eventList.currentRow()
@@ -350,7 +354,7 @@ class App(QObject):
         self.screen.eventNameField.setText(currEvent.name)
         self.screen.eventOwnerLabel.setText(currEvent.owner)
 
-        if self.user.username == currEvent.owner or self.user.username == self.screen.calendarOwnerLabel.text():
+        if self.user.username == self.screen.calendarOwnerLabel.text():
             self.screen.modifyEventButton.setEnabled(True)
             self.screen.deleteEventButton.setEnabled(True)
         else:
@@ -401,9 +405,11 @@ class App(QObject):
                 self.screen.deleteUserButton.setEnabled(False)
             else:
                 self.screen.modifyUserListFrame.setEnabled(False)
+            self.mainWindow.setCentralWidget(self.screen)
+            self.mainWindow.show()
 
     def deleteUser(self) -> None:
-        name = self.screen.userList.currentItem.text()
+        name = self.screen.userList.currentItem().text()
         self.client.writeData(CALENDAR_DELETE_USER_PREFIX, 
                               self.screen.calendarNameLabel.text(),
                               name, self.user.username)
@@ -452,7 +458,9 @@ class App(QObject):
             self.client.writeData(CLOSING_APP_PREFIX)
         else:
             self.client.writeData(CLOSING_APP_PREFIX, self.user.username)
-            exit(0)
+        self.client.socket.close()
+        self.screen.close()
+        self.mainWindow.close()
 
     
 
